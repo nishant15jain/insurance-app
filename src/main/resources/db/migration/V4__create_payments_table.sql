@@ -1,0 +1,9 @@
+CREATE TABLE payments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_policy_id BIGINT NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('PENDING', 'SUCCESS', 'FAILED') NOT NULL DEFAULT 'PENDING',
+    transaction_id VARCHAR(100) UNIQUE,
+    FOREIGN KEY (user_policy_id) REFERENCES user_policies(id) ON DELETE CASCADE
+);

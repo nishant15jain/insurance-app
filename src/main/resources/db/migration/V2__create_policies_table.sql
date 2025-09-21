@@ -1,0 +1,11 @@
+CREATE TABLE policies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    policy_number VARCHAR(50) NOT NULL UNIQUE,
+    type ENUM('HEALTH', 'LIFE', 'VEHICLE', 'TRAVEL') NOT NULL,
+    description TEXT,
+    coverage_amount DECIMAL(15,2) NOT NULL,
+    premium_amount DECIMAL(15,2) NOT NULL,
+    term_years INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
