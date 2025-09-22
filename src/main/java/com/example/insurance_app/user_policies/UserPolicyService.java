@@ -3,6 +3,7 @@ package com.example.insurance_app.user_policies;
 import com.example.insurance_app.exceptions.PolicyOperationException;
 import com.example.insurance_app.exceptions.PolicyPurchaseException;
 import com.example.insurance_app.exceptions.UserPolicyNotFoundException;
+import com.example.insurance_app.payments.PaymentService;
 import com.example.insurance_app.policies.Policy;
 import com.example.insurance_app.policies.PolicyRepository;
 import com.example.insurance_app.users.User;
@@ -24,6 +25,7 @@ public class UserPolicyService {
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
     private final UserPolicyMapper userPolicyMapper;
+    private final PaymentService paymentService;
     
     // Purchase a policy for a user
     @Transactional
@@ -50,6 +52,16 @@ public class UserPolicyService {
         userPolicy.setNextPremiumDue(calculateNextPremiumDue(request.getStartDate(), policy));
         
         UserPolicy savedUserPolicy = userPolicyRepository.save(userPolicy);
+        
+        // Create initial payment record for the policy
+        try {
+            paymentService.createInitialPayment(savedUserPolicy);
+            log.info("Initial payment record created for policy {}", savedUserPolicy.getId());
+        } catch (Exception e) {
+            log.error("Failed to create initial payment for policy {}: {}", savedUserPolicy.getId(), e.getMessage());
+            // Note: We don't fail the policy purchase if payment creation fails
+        }
+        
         log.info("Successfully purchased policy {} for user {}", policy.getPolicyNumber(), user.getEmail());
         return userPolicyMapper.toDto(savedUserPolicy);
     }
@@ -129,6 +141,15 @@ public class UserPolicyService {
         userPolicy.setNextPremiumDue(newPremiumDue);
         userPolicy.setStatus(UserPolicy.Status.ACTIVE);
         UserPolicy renewedUserPolicy = userPolicyRepository.save(userPolicy);
+        
+        // Create payment record for the renewed policy
+        try {
+            paymentService.createInitialPayment(renewedUserPolicy);
+            log.info("Payment record created for renewed policy {}", renewedUserPolicy.getId());
+        } catch (Exception e) {
+            log.error("Failed to create payment for renewed policy {}: {}", renewedUserPolicy.getId(), e.getMessage());
+        }
+        
         return userPolicyMapper.toDto(renewedUserPolicy);
     }
     
@@ -163,6 +184,14 @@ public class UserPolicyService {
     @Transactional(readOnly = true)
     public long countActivePoliciesForUser(Long userId) {
         return userPolicyRepository.countActiveByUserId(userId);
+    }
+    
+    // Check if a user is the owner of a user policy (used for security checks)
+    @Transactional(readOnly = true)
+    public boolean isUserPolicyOwner(Long userPolicyId, Long userId) {
+        return userPolicyRepository.findById(userPolicyId)
+                .map(userPolicy -> userPolicy.getUser().getId().equals(userId))
+                .orElse(false);
     }
     
     // Get all user policies (Admin only)
