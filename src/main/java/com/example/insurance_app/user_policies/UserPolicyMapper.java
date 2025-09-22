@@ -27,7 +27,7 @@ public interface UserPolicyMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", source = "userId", qualifiedByName = "userIdToUser")
     @Mapping(target = "policy", source = "policyId", qualifiedByName = "policyIdToPolicy")
-    @Mapping(target = "status", constant = "ACTIVE")
+    @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "createdAt", ignore = true)
     UserPolicy toEntity(UserPolicyCreateRequest request);
 

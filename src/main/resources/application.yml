@@ -21,3 +21,6 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true
+       
+server:
+  port: 5000  

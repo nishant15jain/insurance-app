@@ -44,7 +44,7 @@ public class UserPolicy {
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Status is required")
     @Column(name = "status", nullable = false)
-    private Status status = Status.ACTIVE;
+    private Status status = Status.PENDING;
     
     @Column(name = "next_premium_due")
     private LocalDate nextPremiumDue;
@@ -54,6 +54,7 @@ public class UserPolicy {
     private LocalDateTime createdAt;
     
     public enum Status {
+        PENDING("Pending"),
         ACTIVE("Active"),
         LAPSED("Lapsed"),
         CANCELLED("Cancelled");
@@ -74,6 +75,10 @@ public class UserPolicy {
         return this.status == Status.ACTIVE;
     }
     
+    public boolean isPending() {
+        return this.status == Status.PENDING;
+    }
+    
     public boolean isExpired() {
         return this.endDate.isBefore(LocalDate.now());
     }
@@ -81,5 +86,11 @@ public class UserPolicy {
     public boolean isPremiumDue() {
         return this.nextPremiumDue != null && 
                this.nextPremiumDue.isBefore(LocalDate.now().plusDays(1));
+    }
+    
+    public void activatePolicy() {
+        if (this.status == Status.PENDING) {
+            this.status = Status.ACTIVE;
+        }
     }
 }

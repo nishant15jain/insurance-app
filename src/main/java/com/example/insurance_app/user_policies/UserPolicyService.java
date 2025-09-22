@@ -50,19 +50,7 @@ public class UserPolicyService {
         
         // Calculate next premium due date based on policy frequency
         userPolicy.setNextPremiumDue(calculateNextPremiumDue(request.getStartDate(), policy));
-        
         UserPolicy savedUserPolicy = userPolicyRepository.save(userPolicy);
-        
-        // Create initial payment record for the policy
-        try {
-            paymentService.createInitialPayment(savedUserPolicy);
-            log.info("Initial payment record created for policy {}", savedUserPolicy.getId());
-        } catch (Exception e) {
-            log.error("Failed to create initial payment for policy {}: {}", savedUserPolicy.getId(), e.getMessage());
-            // Note: We don't fail the policy purchase if payment creation fails
-        }
-        
-        log.info("Successfully purchased policy {} for user {}", policy.getPolicyNumber(), user.getEmail());
         return userPolicyMapper.toDto(savedUserPolicy);
     }
     
@@ -141,15 +129,6 @@ public class UserPolicyService {
         userPolicy.setNextPremiumDue(newPremiumDue);
         userPolicy.setStatus(UserPolicy.Status.ACTIVE);
         UserPolicy renewedUserPolicy = userPolicyRepository.save(userPolicy);
-        
-        // Create payment record for the renewed policy
-        try {
-            paymentService.createInitialPayment(renewedUserPolicy);
-            log.info("Payment record created for renewed policy {}", renewedUserPolicy.getId());
-        } catch (Exception e) {
-            log.error("Failed to create payment for renewed policy {}: {}", renewedUserPolicy.getId(), e.getMessage());
-        }
-        
         return userPolicyMapper.toDto(renewedUserPolicy);
     }
     
@@ -214,6 +193,11 @@ public class UserPolicyService {
     }
     
     private void validateStatusTransition(UserPolicy.Status currentStatus, UserPolicy.Status newStatus) {
+        // Allow transitioning from PENDING to ACTIVE (policy activation on payment)
+        if (currentStatus == UserPolicy.Status.PENDING && newStatus == UserPolicy.Status.ACTIVE) {
+            return; // Allow this transition
+        }
+        
         // Allow transitioning from CANCELLED to ACTIVE (policy reactivation)
         if (currentStatus == UserPolicy.Status.CANCELLED && newStatus == UserPolicy.Status.ACTIVE) {
             return; // Allow this transition

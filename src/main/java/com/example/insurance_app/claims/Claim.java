@@ -4,7 +4,6 @@ import com.example.insurance_app.user_policies.UserPolicy;
 import com.example.insurance_app.users.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -57,6 +57,7 @@ public class PaymentService {
         if (payment.getTransactionId() != null && !payment.getTransactionId().isEmpty()) {
             payment.setStatus(Payment.PaymentStatus.SUCCESS);
             updateNextPremiumDue(userPolicy);  // Update user policy next premium due date
+            activatePolicyIfPending(userPolicy);  // Activate policy if it's in pending status
         }
         
         Payment savedPayment = paymentRepository.save(payment);
@@ -146,25 +147,10 @@ public class PaymentService {
         
         Payment savedPayment = paymentRepository.save(payment);
         updateNextPremiumDue(payment.getUserPolicy());
+        activatePolicyIfPending(payment.getUserPolicy());  // Activate policy if it's in pending status
         return paymentMapper.toDto(savedPayment);
     }
-    
-    // Create initial payment record for a new policy
-    public PaymentDto createInitialPayment(UserPolicy userPolicy) {
-        log.info("Creating initial payment for user policy ID: {}", userPolicy.getId());
         
-        BigDecimal premiumAmount = calculatePremiumAmount(userPolicy);
-        LocalDate dueDate = userPolicy.getNextPremiumDue();
-        
-        PaymentCreateRequest request = new PaymentCreateRequest(
-            userPolicy.getId(),
-            premiumAmount,
-            dueDate
-        );
-        
-        return processPayment(request);
-    }
-    
     // Get payments due in the next N days
     @Transactional(readOnly = true)
     public List<PaymentDto> getPaymentsDueInDays(int days) {
@@ -210,5 +196,13 @@ public class PaymentService {
         int paymentsPerYear = userPolicy.getPolicy().getPremiumFrequency().getPaymentsPerYear();
         
         return annualPremium.divide(BigDecimal.valueOf(paymentsPerYear), 2, RoundingMode.HALF_UP);
+    }
+    
+    private void activatePolicyIfPending(UserPolicy userPolicy) {
+        if (userPolicy.isPending()) {
+            userPolicy.activatePolicy();
+            userPolicyRepository.save(userPolicy);
+            log.info("Policy {} successfully activated", userPolicy.getId());
+        }
     }
 }
